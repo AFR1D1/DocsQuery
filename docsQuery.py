@@ -25,14 +25,16 @@ from langchain_openai import OpenAI
 from langchain.chains.question_answering import load_qa_chain
 from getpass import getpass
 
-# Whoosh does not need a specific embeddings object
-chain = load_qa_chain(OpenAI(), chain_type="stuff")
-
 if "OPENAI_API_KEY" in os.environ:
     print("Token already set.")
 else:
     token = getpass("Enter your OpenAI token: ")
     os.environ["OPENAI_API_KEY"] = str(token)
+
+# Whoosh does not need a specific embeddings object
+chain = load_qa_chain(OpenAI(), chain_type="stuff")
+
+
 
 def create_index(index_dir):
     if not os.path.exists(index_dir):
