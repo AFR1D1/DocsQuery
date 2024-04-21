@@ -3,6 +3,20 @@ import shutil
 from google.colab import files
 import sys
 import subprocess
+import tempfile
+import time
+
+
+
+# Dynamically importing libraries not directly related to Whoosh (handling these as you did originally)
+library_names = ['whoosh','langchain', 'langchain-openai', 'PyPDF2', 'python-docx', 'openai', 'tiktoken', 'python-pptx', 'textwrap']
+for name in library_names:
+    try:
+        __import__(name)
+    except ImportError:
+        print(f"{name} not found. Installing {name}...")
+        subprocess.check_call([sys.executable, '-m', 'pip', 'install', name])
+
 import docx
 import pptx
 from PyPDF2 import PdfReader 
@@ -11,16 +25,6 @@ from whoosh.index import create_in
 from whoosh.fields import Schema, TEXT
 from whoosh.qparser import QueryParser
 from whoosh import qparser
-
-# Dynamically importing libraries not directly related to Whoosh (handling these as you did originally)
-library_names = ['langchain', 'langchain-openai', 'PyPDF2', 'python-docx', 'openai', 'tiktoken', 'python-pptx', 'textwrap']
-for name in library_names:
-    try:
-        __import__(name)
-    except ImportError:
-        print(f"{name} not found. Installing {name}...")
-        subprocess.check_call([sys.executable, '-m', 'pip', 'install', name])
-
 from langchain_openai import OpenAI
 from langchain.chains.question_answering import load_qa_chain
 from getpass import getpass
