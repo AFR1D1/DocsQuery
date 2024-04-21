@@ -90,6 +90,21 @@ def extract_texts(root_files, index_dir):
     texts = text_splitter.split_text(raw_text)
     return create_search_index(texts, index_dir)
 
+def run_query(query, index):
+    """
+    Executes a search query using a Whoosh index.
+    Parameters:
+    query: A string that specifies the query to be executed.
+    index: A Whoosh index object to be queried.
+    Returns:
+    A string that includes the results from applying the chain library to the documents retrieved.
+    """
+    with index.searcher() as searcher:
+        query_parser = QueryParser("content", index.schema)
+        query_obj = query_parser.parse(query)
+        results = searcher.search(query_obj, limit=10)
+        documents = [hit["content"] for hit in results]
+        return chain.run(input_documents=documents, question=query)
 
 def upload_file(folder_path):
     uploaded = files.upload()
