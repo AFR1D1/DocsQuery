@@ -8,7 +8,7 @@ import time
 
 
 
-library_names = ['whoosh','langchain', 'langchain-openai', 'faiss-cpu', 'PyPDF2','python-docx', 'openai', 'tiktoken', 'python-pptx', 'textwrap', ]
+library_names = ['pytesseract', 'langchain', 'langchain-openai', 'faiss-cpu', 'PyPDF2','python-docx', 'openai', 'tiktoken', 'python-pptx', 'textwrap', ]
 
 # Dynamically importing libraries
 for name in library_names:
@@ -18,9 +18,8 @@ for name in library_names:
         print(f"{name} not found. Installing {name}...")
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', name])
 
-from whoosh.index import create_in
-from whoosh.fields import Schema, TEXT, ID
-from whoosh.qparser import QueryParser
+from pytesseract import image_to_string
+from PIL import Image
 from PyPDF2 import PdfReader 
 import textwrap
 import docx
@@ -50,30 +49,36 @@ embeddings = OpenAIEmbeddings()
 chain = load_qa_chain(OpenAI(), chain_type="stuff")
 
 
-def create_search_index(texts, index_dir):
-    if not os.path.exists(index_dir):
-        os.makedirs(index_dir)
-    schema = Schema(content=TEXT(stored=True), path=ID(stored=True, unique=True))
-    ix = create_in(index_dir, schema)
-    writer = ix.writer()
-    for idx, text in enumerate(texts):
-        writer.add_document(content=text, path=str(idx))
-    writer.commit()
-    return ix
-
-def extract_texts(root_files, index_dir):
+def extract_texts(root_files):
+    """
+    Text extractes from file and puts it in a list.
+    Supported file formats include: .pdf, .docx, .pptx
+    If multiple files are uploaded, contents will be merged together
+    Parameters:
+    - root_files: A list containing the paths of the files to be processed.
+    Returns:
+    - A FAISS index object that includes the embeddings of the extracted text segments.
+    """
     raw_text = ''
+
     for root_file in root_files:
         _, ext = os.path.splitext(root_file)
         if ext == '.pdf':
             with open(root_file, 'rb') as f:
                 reader = PdfReader(f)
                 for page in reader.pages:
-                    raw_text += page.extract_text() or ''
+                    raw_text += page.extract_text() if page.extract_text() else ''
         elif ext == '.docx':
             doc = docx.Document(root_file)
             for paragraph in doc.paragraphs:
                 raw_text += paragraph.text + '\n'
+            for rel in doc.part.rels.values():
+                if 'image' in rel.reltype:
+                    image_stream = io.BytesIO(rel.target_part.blob)
+                    image = Image.open(image_stream)
+                    extracted_text = image_to_string(image)
+                    if extracted_text:
+                        raw_text += extracted_text + '\n'
         elif ext == '.pptx':
             ppt = pptx.Presentation(root_file)
             for slide in ppt.slides:
@@ -81,59 +86,87 @@ def extract_texts(root_files, index_dir):
                     if hasattr(shape, 'text'):
                         raw_text += shape.text + '\n'
 
+    # Ensure we don't hit the token size limits
     text_splitter = CharacterTextSplitter(
-        separator="\n",
-        chunk_size=1000,
-        chunk_overlap=200,
-        length_function=len,
+        separator = "\n",
+        chunk_size = 1000,
+        chunk_overlap  = 200,
+        length_function = len,
     )
-    texts = text_splitter.split_text(raw_text)
-    return create_search_index(texts, index_dir)
 
-def run_query(query, index):
+    texts = text_splitter.split_text(raw_text)
+
+    # Assuming `embeddings` is initialized elsewhere in your script
+    docsearch = FAISS.from_texts(texts, embeddings)
+    return docsearch
+
+
+def run_query(query, docsearch):
     """
-    Executes a search query using a Whoosh index.
+    Executes a search query on a PDF file utilizing the docsearch and chain libraries.
     Parameters:
     query: A string that specifies the query to be executed.
-    index: A Whoosh index object to be queried.
+    file: A PDFReader object that holds the PDF file to be queried.
     Returns:
-    A string that includes the results from applying the chain library to the documents retrieved.
+    A string that includes the results from applying the chain library to the documents retrieved by the docsearch similarity search.
     """
-    with index.searcher() as searcher:
-        query_parser = QueryParser("content", index.schema)
-        query_obj = query_parser.parse(query)
-        results = searcher.search(query_obj, limit=10)
-        documents = [hit["content"] for hit in results]
-        return chain.run(input_documents=documents, question=query)
+    
+    docs = docsearch.similarity_search(query)
+    return chain.run(input_documents=docs, question=query)
+
 
 def upload_file(folder_path):
+    """
+    Uploads a file from the local file system and stores it in a specified directory.
+    Parameters:
+    folder_path: A string that indicates the directory where the file should be saved.
+    Returns:
+    A string that denotes the path of the file that has been uploaded.
+    """
+    
     uploaded = files.upload()
-    root_files = []
+    root_file = []
+
     for filename, data in uploaded.items():
-        local_path = os.path.join(tempfile.gettempdir(), filename)
-        with open(local_path, 'wb') as f:
+        with open(filename, 'wb') as f:
             f.write(data)
-        shutil.move(local_path, folder_path)
-        root_files.append(os.path.join(folder_path, filename))
-    return root_files
+        shutil.copy(filename, folder_path + "/")
+        root_file.append(folder_path + "/" + filename)
+        os.remove(filename)
+
+
+    return root_file
 
 
 def run_conversation(folder_path):
+    """
+    Starts a dialogue with the user by continuously requesting input queries and processing them against a PDF file.
+    Parameters:
+    folder_path: A string that specifies the location of the folder containing the PDF file.
+    Returns:
+    Conducts a conversation based on the PDF file.
+    """
     root_files = upload_file(folder_path)
-    index_dir = os.path.join(folder_path, "indexdir")
-    docsearch = extract_texts(root_files, index_dir)
+    # location of the pdf
+
+
+    docsearch = extract_texts(root_files)
+
     count = 0
     while True:
-        query = input(f"Question {count + 1} (type 'stop' to exit): ")
+        print("Question ", count + 1)
+
+        query = input(" Ask questions or type stop:\n ")
+        
         if query.lower() == "stop":
-            print("Exiting. Thank you for using DocsQuery.")
+            print("Thanks.")
             break
-        elif not query.strip():
-            print("Input is empty, please ask a question.")
+        elif query == "":
+            print("Input is empty!")
             continue
-        response = run_query(query, docsearch)
-        wrapped_text = textwrap.wrap(response, width=100)
-        print("\nAnswer:")
-        for line in wrapped_text:
-            print(line)
-        count += 1
+        else:
+            wrapped_text = textwrap.wrap(run_query(query, docsearch), width=100)
+            print("Answer:")
+            for line in wrapped_text:
+                print(line)
+            count += 1
