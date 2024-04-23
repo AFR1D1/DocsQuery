@@ -157,6 +157,7 @@ def extract_keywords(text):
     doc = nlp(text)
     return [token.lemma_ for token in doc if token.pos_ in {'NOUN', 'PROPN', 'VERB'} and not token.is_stop]
 
+
 keywords = extract_keywords(user_query)
 
 ##############
