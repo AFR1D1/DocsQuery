@@ -64,10 +64,18 @@ def extract_texts(root_files):
     for root_file in root_files:
         _, ext = os.path.splitext(root_file)
         if ext == '.pdf':
+            # First try to extract text normally
             with open(root_file, 'rb') as f:
                 reader = PdfReader(f)
                 for page in reader.pages:
-                    raw_text += page.extract_text() if page.extract_text() else ''
+                    text = page.extract_text()
+                    if text:
+                        raw_text += text + '\n'
+                    else:
+                        # If normal text extraction doesn't work, use OCR
+                        images = convert_from_path(root_file)
+                        for image in images:
+                            raw_text += image_to_string(image) + '\n'
         elif ext == '.docx':
             doc = docx.Document(root_file)
             for paragraph in doc.paragraphs:
@@ -76,27 +84,26 @@ def extract_texts(root_files):
                 if 'image' in rel.reltype:
                     image_stream = io.BytesIO(rel.target_part.blob)
                     image = Image.open(image_stream)
-                    extracted_text = image_to_string(image)
-                    if extracted_text:
-                        raw_text += extracted_text + '\n'
+                    raw_text += image_to_string(image) + '\n'
         elif ext == '.pptx':
             ppt = pptx.Presentation(root_file)
             for slide in ppt.slides:
                 for shape in slide.shapes:
                     if hasattr(shape, 'text'):
                         raw_text += shape.text + '\n'
+                    elif shape.shape_type == 13: # ShapeType 13 corresponds to a picture
+                        image_stream = io.BytesIO(shape.image.blob)
+                        image = Image.open(image_stream)
+                        raw_text += image_to_string(image) + '\n'
 
-    # Ensure we don't hit the token size limits
     text_splitter = CharacterTextSplitter(
-        separator = "\n",
-        chunk_size = 1000,
-        chunk_overlap  = 200,
-        length_function = len,
+        separator="\n",
+        chunk_size=1000,
+        chunk_overlap=200,
+        length_function=len,
     )
 
     texts = text_splitter.split_text(raw_text)
-
-    # Assuming `embeddings` is initialized elsewhere in your script
     docsearch = FAISS.from_texts(texts, embeddings)
     return docsearch
 
