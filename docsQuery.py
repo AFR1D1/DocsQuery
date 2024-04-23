@@ -8,7 +8,7 @@ import time
 
 
 
-library_names = ['pytesseract', 'langchain', 'langchain-openai', 'faiss-cpu', 'PyPDF2','python-docx', 'openai', 'tiktoken', 'python-pptx', 'textwrap', ]
+library_names = ['pytesseract', 'sentence-transformers', 'langchain', 'langchain-openai', 'faiss-cpu', 'PyPDF2','python-docx', 'openai', 'tiktoken', 'python-pptx', 'textwrap', ]
 
 # Dynamically importing libraries
 for name in library_names:
@@ -143,28 +143,46 @@ def upload_file(folder_path):
 
 
     return root_file
+################
+import spacy
+import torch
+from sentence_transformers import SentenceTransformer, util
 
+
+
+nlp = spacy.load("en_core_web_sm")  # Load a language model
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+def extract_keywords(text):
+    doc = nlp(text)
+    return [token.lemma_ for token in doc if token.pos_ in {'NOUN', 'PROPN', 'VERB'} and not token.is_stop]
+
+keywords = extract_keywords(user_query)
+
+##############
+
+
+def find_similar_questions(query, questions, top_k=5):
+    query_embedding = model.encode(query, convert_to_tensor=True)
+    question_embeddings = model.encode(questions, convert_to_tensor=True)
+    cos_scores = util.pytorch_cos_sim(query_embedding, question_embeddings)[0]
+    top_results = torch.topk(cos_scores, k=top_k)
+    return [questions[index] for index in top_results.indices]
+
+def load_all_questions():
+    # This should load or define all potential questions. Placeholder for actual implementation.
+    return ["What is the best strategy?", "How to implement an algorithm?", "Examples of data structures?", "Define machine learning models", "Latest trends in technology?"]
+
+#################
 
 def run_conversation(folder_path):
-    """
-    Starts a dialogue with the user by continuously requesting input queries and processing them against a PDF file.
-    Parameters:
-    folder_path: A string that specifies the location of the folder containing the PDF file.
-    Returns:
-    Conducts a conversation based on the PDF file.
-    """
     root_files = upload_file(folder_path)
-    # location of the pdf
-
-
     docsearch = extract_texts(root_files)
-
+    all_questions = load_all_questions()
     count = 0
     while True:
-        print("Question ", count + 1)
-
-        query = input(" Ask questions or type stop:\n ")
-        
+        print(f"Question {count + 1}")
+        query = input("Ask questions or type stop:\n")
         if query.lower() == "stop":
             print("Thanks.")
             break
@@ -172,8 +190,13 @@ def run_conversation(folder_path):
             print("Input is empty!")
             continue
         else:
-            wrapped_text = textwrap.wrap(run_query(query, docsearch), width=100)
+            response = run_query(query, docsearch)
+            wrapped_text = textwrap.wrap(response, width=100)
             print("Answer:")
             for line in wrapped_text:
                 print(line)
+            suggestions = find_similar_questions(query, all_questions)
+            print("Related questions:")
+            for question in suggestions:
+                print(question)
             count += 1
