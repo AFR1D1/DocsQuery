@@ -29,7 +29,7 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.vectorstores import FAISS
 from langchain.chains.question_answering import load_qa_chain
 from getpass import getpass
-
+import io
 
 
 
