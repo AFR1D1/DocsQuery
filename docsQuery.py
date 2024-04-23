@@ -192,10 +192,10 @@ def run_conversation(folder_path):
             continue
         else:
             # Extract keywords from the user's query
-            keywords = extract_keywords(user_query)
+            keywords = extract_keywords(query)
             
             # Run the query against the documents
-            response = run_query(user_query, docsearch)
+            response = run_query(query, docsearch)
             
             # Print the response
             wrapped_text = textwrap.wrap(response, width=100)
@@ -204,7 +204,7 @@ def run_conversation(folder_path):
                 print(line)
             
             # Generate and print related questions suggestions
-            suggestions = find_similar_questions(user_query, all_questions)
+            suggestions = find_similar_questions(query, all_questions)
             print("Related questions:")
             for question in suggestions:
                 print(question)
