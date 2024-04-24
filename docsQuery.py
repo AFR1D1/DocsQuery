@@ -8,7 +8,7 @@ import time
 
 
 
-library_names = ['pytesseract', 'sentence-transformers', 'langchain', 'langchain-openai', 'faiss-cpu', 'PyPDF2','python-docx', 'openai', 'tiktoken', 'python-pptx', 'textwrap', ]
+library_names = ['spacy','pytesseract', 'sentence-transformers', 'langchain', 'langchain-openai', 'faiss-cpu', 'PyPDF2','python-docx', 'openai', 'tiktoken', 'python-pptx', 'textwrap', ]
 
 # Dynamically importing libraries
 for name in library_names:
@@ -30,6 +30,31 @@ from langchain.vectorstores import FAISS
 from langchain.chains.question_answering import load_qa_chain
 from getpass import getpass
 import io
+
+# Import spaCy after installation
+import spacy
+from spacy.matcher import Matcher
+
+# Downloading the English language model for spaCy
+try:
+    nlp = spacy.load("en_core_web_sm")
+except IOError:
+    print("en_core_web_sm not found. Downloading en_core_web_sm...")
+    subprocess.check_call([sys.executable, '-m', 'spacy', 'download', 'en_core_web_sm'])
+    nlp = spacy.load("en_core_web_sm")
+
+matcher = Matcher(nlp.vocab)
+
+# Add match pattern for URLs
+pattern = [{"LIKE_URL": True}]
+matcher.add("URL_PATTERN", [pattern])
+
+def extract_keywords(text):
+    doc = nlp(text)
+    matches = matcher(doc)
+    # Filter out URLs
+    keywords = [token.lemma_ for token in doc if token.pos_ in {'NOUN', 'PROPN', 'VERB'} and not token.is_stop and token.i not in [start for match_id, start, end in matches]]
+    return keywords
 
 
 
