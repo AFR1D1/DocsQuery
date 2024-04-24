@@ -170,16 +170,38 @@ def find_similar_questions(query, questions, top_k=5):
     top_results = torch.topk(cos_scores, k=top_k)
     return [questions[index] for index in top_results.indices]
 
-def load_all_questions():
-    # This should load or define all potential questions. Placeholder for actual implementation.
-    return ["What is the best strategy?", "How to implement an algorithm?", "Examples of data structures?", "Define machine learning models", "Latest trends in technology?"]
+def load_all_questions(docsearch):
+    """
+    Dynamically generates questions based on the content of uploaded files.
+    Parameters:
+    docsearch: An FAISS index object containing the embeddings and text segments of the uploaded files.
+    Returns:
+    A list of generated questions based on the keywords extracted from the text.
+    """
+    # Extract all text from the FAISS index to analyze
+    all_texts = " ".join([text for text in docsearch.get_texts()])  # Assuming docsearch can return all texts
+    
+    # Extract keywords
+    keywords = extract_keywords(all_texts)
+    
+    # Generate questions from keywords
+    questions = []
+    for keyword in set(keywords):  # Using set to remove duplicates
+        questions.extend([
+            f"What is {keyword}?",
+            f"How does {keyword} work?",
+            f"What are the applications of {keyword}?",
+            f"Explain the concept of {keyword}",
+            f"Advantages and disadvantages of {keyword}?"
+        ])
+    return questions
 
 #################
 
 def run_conversation(folder_path):
     root_files = upload_file(folder_path)
     docsearch = extract_texts(root_files)
-    all_questions = load_all_questions()
+    all_questions = load_all_questions(docsearch)  # Pass docsearch to load questions based on file content
     count = 0
     while True:
         print(f"Question {count + 1}")
@@ -210,3 +232,4 @@ def run_conversation(folder_path):
                 print(question)
             
             count += 1
+
