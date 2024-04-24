@@ -52,9 +52,16 @@ matcher.add("URL_PATTERN", [pattern])
 def extract_keywords(text):
     doc = nlp(text)
     matches = matcher(doc)
-    # Filter out URLs
-    keywords = [token.lemma_ for token in doc if token.pos_ in {'NOUN', 'PROPN', 'VERB'} and not token.is_stop and token.i not in [start for match_id, start, end in matches]]
+    # Creating a set of indices for tokens that should be excluded (URLs in this case)
+    excluded_tokens = {start for match_id, start, end in matches}
+    keywords = [
+        token.lemma_ for token in doc 
+        if token.pos_ in {'NOUN', 'PROPN', 'VERB'} 
+        and not token.is_stop 
+        and token.i not in excluded_tokens  # Exclude tokens that are part of a URL
+    ]
     return keywords
+
 
 
 
@@ -180,9 +187,7 @@ from sentence_transformers import SentenceTransformer, util
 nlp = spacy.load("en_core_web_sm")  # Load a language model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-def extract_keywords(text):
-    doc = nlp(text)
-    return [token.lemma_ for token in doc if token.pos_ in {'NOUN', 'PROPN', 'VERB'} and not token.is_stop]
+
 
 
 
