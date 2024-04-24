@@ -105,7 +105,9 @@ def extract_texts(root_files):
 
     texts = text_splitter.split_text(raw_text)
     docsearch = FAISS.from_texts(texts, embeddings)
-    return docsearch
+
+    # Return both the FAISS index and the texts
+    return docsearch, texts
 
 
 def run_query(query, docsearch):
@@ -170,23 +172,23 @@ def find_similar_questions(query, questions, top_k=5):
     top_results = torch.topk(cos_scores, k=top_k)
     return [questions[index] for index in top_results.indices]
 
-def load_all_questions(docsearch):
+def load_all_questions(all_texts):
     """
     Dynamically generates questions based on the content of uploaded files.
     Parameters:
-    docsearch: An FAISS index object containing the embeddings and text segments of the uploaded files.
+    all_texts: A list of strings containing the text segments of the uploaded files.
     Returns:
     A list of generated questions based on the keywords extracted from the text.
     """
-    # Extract all text from the FAISS index to analyze
-    all_texts = " ".join([text for text in docsearch.get_texts()])  # Assuming docsearch can return all texts
-    
-    # Extract keywords
-    keywords = extract_keywords(all_texts)
+    # Use the provided list of texts to extract keywords and generate questions
+    unique_keywords = set()
+    for text in all_texts:
+        keywords = extract_keywords(text)
+        unique_keywords.update(keywords)
     
     # Generate questions from keywords
     questions = []
-    for keyword in set(keywords):  # Using set to remove duplicates
+    for keyword in unique_keywords:
         questions.extend([
             f"What is {keyword}?",
             f"How does {keyword} work?",
@@ -196,12 +198,13 @@ def load_all_questions(docsearch):
         ])
     return questions
 
+
 #################
 
 def run_conversation(folder_path):
     root_files = upload_file(folder_path)
-    docsearch = extract_texts(root_files)
-    all_questions = load_all_questions(docsearch)  # Pass docsearch to load questions based on file content
+    docsearch, all_texts = extract_texts(root_files)  # Receive texts as well
+    all_questions = load_all_questions(all_texts)
     count = 0
     while True:
         print(f"Question {count + 1}")
