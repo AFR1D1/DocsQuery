@@ -202,31 +202,48 @@ def find_similar_questions(query, questions, top_k=5):
     top_results = torch.topk(cos_scores, k=top_k)
     return [questions[index] for index in top_results.indices]
 
-def load_all_questions(all_texts):
+from openai import ChatCompletion
+
+def generate_questions(keywords, model, max_questions=5):
     """
-    Dynamically generates questions based on the content of uploaded files.
+    Generates a list of questions for each keyword using a language model.
+    Parameters:
+    keywords: A set of extracted keywords.
+    model: An instance of the OpenAI API model for generating questions.
+    max_questions: Maximum number of questions to generate per keyword.
+    Returns:
+    A list of questions.
+    """
+    questions = []
+    for keyword in keywords:
+        prompt = f"Generate {max_questions} questions about the keyword '{keyword}':"
+        response = model.create(
+            model="gpt-3.5-turbo",  # or the latest available model
+            prompt=prompt,
+            max_tokens=150,
+            n=max_questions,
+            stop=["\n", "\n\n"]
+        )
+        questions.extend(response.choices[0].text.strip().split('\n'))
+    return questions
+
+def load_all_questions(all_texts, model):
+    """
+    Generates questions based on the content of uploaded files dynamically using a language model.
     Parameters:
     all_texts: A list of strings containing the text segments of the uploaded files.
+    model: An instance of the OpenAI API model for generating questions.
     Returns:
     A list of generated questions based on the keywords extracted from the text.
     """
-    # Use the provided list of texts to extract keywords and generate questions
     unique_keywords = set()
     for text in all_texts:
         keywords = extract_keywords(text)
         unique_keywords.update(keywords)
     
-    # Generate questions from keywords
-    questions = []
-    for keyword in unique_keywords:
-        questions.extend([
-            f"What is {keyword}?",
-            f"How does {keyword} work?",
-            f"What are the applications of {keyword}?",
-            f"Explain the concept of {keyword}",
-            f"Advantages and disadvantages of {keyword}?"
-        ])
-    return questions
+    # Generate questions dynamically from keywords using a language model
+    all_questions = generate_questions(unique_keywords, model)
+    return all_questions
 
 
 #################
