@@ -30,6 +30,7 @@ from langchain.vectorstores import FAISS
 from langchain.chains.question_answering import load_qa_chain
 from getpass import getpass
 import io
+import openai
 
 # Import spaCy after installation
 import spacy
@@ -247,11 +248,14 @@ def load_all_questions(all_texts, model):
 
 
 #################
+openai.api_key = os.getenv("OPENAI_API_KEY")
+model_for_question_generation = openai.Completion
 
-def run_conversation(folder_path):
+
+def run_conversation(folder_path, model_for_question_generation):
     root_files = upload_file(folder_path)
     docsearch, all_texts = extract_texts(root_files)  # Receive texts as well
-    all_questions = load_all_questions(all_texts)
+    all_questions = load_all_questions(all_texts, model_for_question_generation)
     count = 0
     while True:
         print(f"Question {count + 1}")
