@@ -203,12 +203,16 @@ def find_similar_questions(query, questions, top_k=5):
     top_results = torch.topk(cos_scores, k=top_k)
     return [questions[index] for index in top_results.indices]
 
-from openai import ChatCompletion
+from openai import OpenAI
 
-def generate_questions(keywords, max_questions=5):
+# Instantiate the client with your OpenAI API key
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+def generate_questions(client, keywords, max_questions=5):
     """
     Generates a list of questions for each keyword using the OpenAI language model.
     Parameters:
+    client: An OpenAI client instance.
     keywords: A set of extracted keywords.
     max_questions: Maximum number of questions to generate per keyword.
     Returns:
@@ -216,15 +220,17 @@ def generate_questions(keywords, max_questions=5):
     """
     questions = []
     for keyword in keywords:
-        prompt = f"Generate {max_questions} questions about the keyword '{keyword}':"
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # or the latest available model
-            messages=[{"role": "system", "content": prompt}],
-            max_tokens=150,
-            n=max_questions,
-            stop=["\n", "\n\n"]
+        # Use the chat completion method of the client for question generation
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": f"Generate {max_questions} questions about the keyword '{keyword}':" }
+            ],
         )
-        questions.extend([message['content'] for message in response['choices'][0]['message'] if message['role'] == 'assistant'])
+        # Extract generated messages and append to questions list
+        for message in response['choices'][0]['message']:
+            if message['role'] == 'assistant':  # We want to capture only the assistant's messages
+                questions.append(message['content'])
     return questions
 
 def load_all_questions(all_texts, model):
@@ -242,19 +248,23 @@ def load_all_questions(all_texts, model):
         unique_keywords.update(keywords)
     
     # Generate questions dynamically from keywords using a language model
-    all_questions = generate_questions(unique_keywords, model)
+    all_questions = generate_questions(client, unique_keywords)
     return all_questions
 
 
 #################
-openai.api_key = os.getenv("OPENAI_API_KEY")
-model_for_question_generation = openai.Completion
 
 
-def run_conversation(folder_path, model_for_question_generation):
+
+from openai import OpenAI
+
+def run_conversation(folder_path):
+    # Instantiate the OpenAI client
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
     root_files = upload_file(folder_path)
     docsearch, all_texts = extract_texts(root_files)  # Receive texts as well
-    all_questions = load_all_questions(all_texts, model_for_question_generation)
+    all_questions = load_all_questions(all_texts, client)  # Pass the client instance here
     count = 0
     while True:
         print(f"Question {count + 1}")
@@ -285,4 +295,5 @@ def run_conversation(folder_path, model_for_question_generation):
                 print(question)
             
             count += 1
+
 
