@@ -205,12 +205,11 @@ def find_similar_questions(query, questions, top_k=5):
 
 from openai import ChatCompletion
 
-def generate_questions(keywords, model, max_questions=5):
+def generate_questions(keywords, max_questions=5):
     """
-    Generates a list of questions for each keyword using a language model.
+    Generates a list of questions for each keyword using the OpenAI language model.
     Parameters:
     keywords: A set of extracted keywords.
-    model: An instance of the OpenAI API model for generating questions.
     max_questions: Maximum number of questions to generate per keyword.
     Returns:
     A list of questions.
@@ -218,14 +217,14 @@ def generate_questions(keywords, model, max_questions=5):
     questions = []
     for keyword in keywords:
         prompt = f"Generate {max_questions} questions about the keyword '{keyword}':"
-        response = model.create(
+        response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",  # or the latest available model
-            prompt=prompt,
+            messages=[{"role": "system", "content": prompt}],
             max_tokens=150,
             n=max_questions,
             stop=["\n", "\n\n"]
         )
-        questions.extend(response.choices[0].text.strip().split('\n'))
+        questions.extend([message['content'] for message in response['choices'][0]['message'] if message['role'] == 'assistant'])
     return questions
 
 def load_all_questions(all_texts, model):
