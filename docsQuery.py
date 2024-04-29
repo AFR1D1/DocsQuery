@@ -212,18 +212,19 @@ def generate_questions(client, keywords, max_questions=5):
     questions = []
     for keyword in keywords:
         prompt = f"Generate {max_questions} questions about the keyword '{keyword}':"
-        response = client.chat.completions.create(
+        response = client.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "system", "content": prompt}]
         )
+        print(response)
         
-        # Access the first choice's message directly since the response contains only one choice based on your structure.
-        message = response.choices[0].message
-        
-        # Check if the role is 'assistant' and append content to questions list
-        if message.role == 'assistant':
-            questions.append(message.content)
-#3.57
+        # Process the response based on its structure
+        for choice in response['choices']:
+            # Assuming 'choice' is a dictionary and has a key 'message' that contains the assistant's messages
+            for message in choice['messages']:
+                if message['role'] == 'assistant':
+                    questions.append(message['content'])
+#4.3
     return questions
 
 
