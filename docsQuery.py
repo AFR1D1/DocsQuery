@@ -232,6 +232,7 @@ def generate_questions(client, keywords, max_questions=5):
             if message.role == 'assistant':
                 # Extract the content attribute of the message
                 questions.append(message.content)
+    #3.55
     return questions
 
 def load_all_questions(all_texts, model):
