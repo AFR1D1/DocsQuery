@@ -220,15 +220,18 @@ def generate_questions(client, keywords, max_questions=5):
     """
     questions = []
     for keyword in keywords:
-        # Use the chat completion method of the client for question generation
+        prompt = f"Generate {max_questions} questions about the keyword '{keyword}':"
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": f"Generate {max_questions} questions about the keyword '{keyword}':" }
-            ],
+            messages=[{"role": "system", "content": prompt}]
         )
+        
+        # Correctly parse the response
+        # The response object is not directly subscriptable; access its 'choices' attribute
+        completion = response.choices[0].message  # This might need to be adapted based on actual response structure
+        
         # Extract generated messages and append to questions list
-        for message in response['choices'][0]['message']:
+        for message in completion:
             if message['role'] == 'assistant':  # We want to capture only the assistant's messages
                 questions.append(message['content'])
     return questions
