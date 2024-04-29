@@ -209,15 +209,6 @@ from openai import OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def generate_questions(client, keywords, max_questions=5):
-    """
-    Generates a list of questions for each keyword using the OpenAI language model.
-    Parameters:
-    client: An OpenAI client instance.
-    keywords: A set of extracted keywords.
-    max_questions: Maximum number of questions to generate per keyword.
-    Returns:
-    A list of questions.
-    """
     questions = []
     for keyword in keywords:
         prompt = f"Generate {max_questions} questions about the keyword '{keyword}':"
@@ -226,14 +217,15 @@ def generate_questions(client, keywords, max_questions=5):
             messages=[{"role": "system", "content": prompt}]
         )
         
-        # The response here is a ChatCompletion object, handle it properly
-        for choice in response.choices:
-            message = choice.message
-            if message.role == 'assistant':
-                # Extract the content attribute of the message
-                questions.append(message.content)
-    #3.55
+        # Access the first choice's message directly since the response contains only one choice based on your structure.
+        message = response.choices[0].message
+        
+        # Check if the role is 'assistant' and append content to questions list
+        if message.role == 'assistant':
+            questions.append(message.content)
+#3.57
     return questions
+
 
 def load_all_questions(all_texts, model):
     """
