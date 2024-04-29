@@ -222,16 +222,21 @@ def generate_questions(client, keywords, max_questions=5):
     for keyword in keywords:
         prompt = f"Generate {max_questions} questions about the keyword '{keyword}':"
         response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-            {"role": "system", "content": f"Generate {max_questions} questions about the keyword '{keyword}':" }
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": f"Generate {max_questions} questions about the keyword '{keyword}':" }
             ]
         )
-    
-    # The messages from the response are accessed as follows
-        for message in response['choices'][0]['message']:
-            if message['role'] == 'assistant':
-                questions.append(message['content'])
+        
+        # Print the response to understand its structure
+        print(response)
+        
+        # Then parse the response based on its actual structure
+        # Replace the below code with the correct keys based on the printed response
+        for choice in response['choices']:
+            for message in choice['messages']:
+                if message['role'] == 'assistant':
+                    questions.append(message['content'])
     return questions
 
 def load_all_questions(all_texts, model):
