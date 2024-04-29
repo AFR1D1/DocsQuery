@@ -228,12 +228,11 @@ def generate_questions(client, keywords, max_questions=5):
         
         # Correctly parse the response
         # The response object is not directly subscriptable; access its 'choices' attribute
-        completion = response.choices[0].message  # This might need to be adapted based on actual response structure
-        
-        # Extract generated messages and append to questions list
-        for message in completion:
-            if message['role'] == 'assistant':  # We want to capture only the assistant's messages
-                questions.append(message['content'])
+        for choice in response['choices']:
+            messages = choice['messages']
+            for message in messages:
+                if message['role'] == 'assistant':
+                    questions.append(message['content'])
     return questions
 
 def load_all_questions(all_texts, model):
