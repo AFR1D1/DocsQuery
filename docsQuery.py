@@ -8,7 +8,7 @@ import time
 
 
 
-library_names = ['spacy','pytesseract', 'sentence-transformers', 'langchain', 'langchain-openai', 'faiss-cpu', 'PyPDF2','python-docx', 'openai', 'tiktoken', 'python-pptx', 'textwrap', ]
+library_names = ['spacy', 'spacy[transformers]','pytesseract', 'sentence-transformers', 'langchain', 'langchain-openai', 'faiss-cpu', 'PyPDF2','python-docx', 'openai', 'tiktoken', 'python-pptx', 'textwrap', ]
 
 # Dynamically importing libraries
 for name in library_names:
