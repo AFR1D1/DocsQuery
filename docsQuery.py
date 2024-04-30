@@ -31,7 +31,7 @@ from langchain.chains.question_answering import load_qa_chain
 from getpass import getpass
 import io
 
-# Import spaCy after installation
+
 import spacy
 from spacy.matcher import Matcher
 
@@ -206,7 +206,7 @@ def find_similar_questions(query, questions, top_k=5):
 
     for index in top_results.indices:
         question = questions[index]
-        keyword = question.split()[2]  # Assuming the format "What is {keyword}?" for simplicity
+        keyword = question.split()[2]  
 
         if keyword not in seen_keywords:
             suggested_questions.append(question)
@@ -246,9 +246,9 @@ def run_conversation(folder_path):
     count = 0
     while True:
         print(f"Question {count + 1}")
-        user_input = input("Ask questions, type suggest, or type stop:\n")
+        user_input = input("Please Ask questions, or type 'suggest' to get related questions, or type 'stop' when done:\n")
         if user_input.lower() == "stop":
-            print("Thanks for using the service.")
+            print("Thanks.")
             break
         elif user_input.lower() == "suggest":
             # Generate and print related questions suggestions
