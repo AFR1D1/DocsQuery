@@ -88,27 +88,50 @@ def generate_questions(keywords):
     return questions
 
 def extract_texts(root_files):
+    import logging
+    from pdf2image import convert_from_path
+    from PIL import Image
+    from pytesseract import image_to_string
+    from PyPDF2 import PdfReader
+    import docx
+    import pptx
+    import io
+
+    logging.basicConfig(level=logging.INFO)
     raw_text = ''
+
     for root_file in root_files:
-        _, ext = os.path.splitext(root_file)
-        if ext == '.pdf':
-            with open(root_file, 'rb') as f:
-                reader = PdfReader(f)
-                for page in reader.pages:
-                    text = page.extract_text()
-                    if text:
-                        raw_text += text + '\n'
-        elif ext == '.docx':
-            doc = docx.Document(root_file)
-            for paragraph in doc.paragraphs:
-                raw_text += paragraph.text + '\n'
-        elif ext == '.pptx':
-            ppt = pptx.Presentation(root_file)
-            for slide in ppt.slides:
-                for shape in slide.shapes:
-                    if hasattr(shape, 'text'):
-                        raw_text += shape.text + '\n'
-    return raw_text
+        try:
+            _, ext = os.path.splitext(root_file)
+            if ext == '.pdf':
+                with open(root_file, 'rb') as f:
+                    reader = PdfReader(f)
+                    for page in reader.pages:
+                        text = page.extract_text()
+                        if text:
+                            raw_text += text + '\n'
+                        else:
+                            images = convert_from_path(root_file)
+                            for image in images:
+                                raw_text += image_to_string(image) + '\n'
+            elif ext == '.docx':
+                doc = docx.Document(root_file)
+                for paragraph in doc.paragraphs:
+                    raw_text += paragraph.text + '\n'
+            elif ext == '.pptx':
+                ppt = pptx.Presentation(root_file)
+                for slide in ppt.slides:
+                    for shape in slide.shapes:
+                        if hasattr(shape, 'text'):
+                            raw_text += shape.text + '\n'
+        except Exception as e:
+            logging.error(f"Error processing file {root_file}: {e}")
+
+    text_splitter = CharacterTextSplitter(separator="\n", chunk_size=1000, chunk_overlap=200, length_function=len)
+    texts = text_splitter.split_text(raw_text)
+    docsearch = FAISS.from_texts(texts, embeddings)  # Ensure embeddings are defined and passed correctly
+
+    return docsearch, texts
 
 def run_query(query, docsearch):
     """
