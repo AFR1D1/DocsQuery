@@ -37,11 +37,11 @@ from spacy.matcher import Matcher
 
 # Downloading the English language model for spaCy
 try:
-    nlp = spacy.load("en_core_web_trf")
+    nlp = spacy.load("en_core_web_sm")
 except IOError:
-    print("en_core_web_trf not found. Downloading en_core_web_trf...")
-    subprocess.check_call([sys.executable, '-m', 'spacy', 'download', 'en_core_web_trf'])
-    nlp = spacy.load("en_core_web_trf")
+    print("en_core_web_sm not found. Downloading en_core_web_sm...")
+    subprocess.check_call([sys.executable, '-m', 'spacy', 'download', 'en_core_web_sm'])
+    nlp = spacy.load("en_core_web_sm")
 
 matcher = Matcher(nlp.vocab)
 
@@ -184,7 +184,7 @@ from sentence_transformers import SentenceTransformer, util
 
 
 
-nlp = spacy.load("en_core_web_trf")  # Load a language model
+nlp = spacy.load("en_core_web_sm")  # Load a language model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 
