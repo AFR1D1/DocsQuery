@@ -8,7 +8,7 @@ import time
 
 
 
-library_names = ['spacy', 'spacy[transformers]','pytesseract', 'sentence-transformers', 'langchain', 'langchain-openai', 'faiss-cpu', 'PyPDF2','python-docx', 'openai', 'tiktoken', 'python-pptx', 'textwrap', ]
+library_names = ['spacy','pytesseract', 'sentence-transformers', 'langchain', 'langchain-openai', 'faiss-cpu', 'PyPDF2','python-docx', 'openai', 'tiktoken', 'python-pptx', 'textwrap', ]
 
 # Dynamically importing libraries
 for name in library_names:
@@ -17,13 +17,6 @@ for name in library_names:
     except ImportError:
         print(f"{name} not found. Installing {name}...")
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', name])
-
-# Install spacy[transformers] and download en_core_web_trf if spacy is successfully imported
-try:
-    __import__('spacy')
-    subprocess.check_call([sys.executable, '-m', 'spacy', 'download', 'en_core_web_trf'])
-except Exception as e:
-    print(f"An error occurred: {e}")
 
 from pytesseract import image_to_string
 from PIL import Image
@@ -42,17 +35,13 @@ import io
 import spacy
 from spacy.matcher import Matcher
 
-
-import torch
-from sentence_transformers import SentenceTransformer, util
-
 # Downloading the English language model for spaCy
-#try:
-nlp = spacy.load("en_core_web_trf")
-#except IOError:
-#    print("en_core_web_trf not found. Attempting to download...")
-#    subprocess.check_call([sys.executable, '-m', 'spacy', 'download', 'en_core_web_trf'])
-#    nlp = spacy.load("en_core_web_trf")
+try:
+    nlp = spacy.load("en_core_web_sm")
+except IOError:
+    print("en_core_web_sm not found. Downloading en_core_web_sm...")
+    subprocess.check_call([sys.executable, '-m', 'spacy', 'download', 'en_core_web_sm'])
+    nlp = spacy.load("en_core_web_sm")
 
 matcher = Matcher(nlp.vocab)
 
@@ -60,20 +49,18 @@ matcher = Matcher(nlp.vocab)
 pattern = [{"LIKE_URL": True}]
 matcher.add("URL_PATTERN", [pattern])
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
-
 def extract_keywords(text):
     doc = nlp(text)
-    keywords = set()
-    
-    # Extract entities and nouns as keywords
-    for ent in doc.ents:
-        keywords.add(ent.lemma_.lower())
-    for token in doc:
-        if token.pos_ in ['NOUN', 'PROPN'] and not token.is_stop:
-            keywords.add(token.lemma_.lower())
-    
-    return list(keywords)
+    matches = matcher(doc)
+    # Creating a set of indices for tokens that should be excluded (URLs in this case)
+    excluded_tokens = {start for match_id, start, end in matches}
+    keywords = [
+        token.lemma_ for token in doc 
+        if token.pos_ in {'NOUN', 'PROPN', 'VERB'} 
+        and not token.is_stop 
+        and token.i not in excluded_tokens  # Exclude tokens that are part of a URL
+    ]
+    return keywords
 
 
 
@@ -191,11 +178,14 @@ def upload_file(folder_path):
 
     return root_file
 ################
+import spacy
+import torch
+from sentence_transformers import SentenceTransformer, util
 
 
 
-
-
+nlp = spacy.load("en_core_web_sm")  # Load a language model
+model = SentenceTransformer('all-MiniLM-L6-v2')
 
 
 
@@ -215,7 +205,12 @@ def find_similar_questions(query, questions, top_k=5):
 def load_all_questions(all_texts):
     """
     Dynamically generates questions based on the content of uploaded files.
+    Parameters:
+    all_texts: A list of strings containing the text segments of the uploaded files.
+    Returns:
+    A list of generated questions based on the keywords extracted from the text.
     """
+    # Use the provided list of texts to extract keywords and generate questions
     unique_keywords = set()
     for text in all_texts:
         keywords = extract_keywords(text)
@@ -224,20 +219,13 @@ def load_all_questions(all_texts):
     # Generate questions from keywords
     questions = []
     for keyword in unique_keywords:
-        if len(keyword) > 2:  # Filter out very short keywords that might be less relevant
-            questions.extend([
-                f"What is {keyword}?",
-                f"How does {keyword} work?",
-                f"What are the applications of {keyword}?",
-                f"Explain the concept of {keyword}",
-                f"Advantages and disadvantages of {keyword}?",
-                f"What theoretical frameworks underpin {keyword}?",
-                f"How has {keyword} evolved over time?",
-                f"Compare {keyword} with another concept in its category.",
-                f"What methodologies are most effective for studying {keyword}?",
-                f"What ethical issues surround {keyword}?",
-                f"What are the future research directions for {keyword}?"
-            ])
+        questions.extend([
+            f"What is {keyword}?",
+            f"How does {keyword} work?",
+            f"What are the applications of {keyword}?",
+            f"Explain the concept of {keyword}",
+            f"Advantages and disadvantages of {keyword}?"
+        ])
     return questions
 
 
