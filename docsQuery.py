@@ -75,6 +75,18 @@ embeddings = OpenAIEmbeddings()
 chain = load_qa_chain(OpenAI(), chain_type="stuff")
 
 
+def generate_questions(keywords):
+    questions = []
+    for keyword in set(keywords):
+        questions.extend([
+            f"What is {keyword}?",
+            f"How does {keyword} work?",
+            f"What are the applications of {keyword}?",
+            f"Explain the concept of {keyword}",
+            f"Advantages and disadvantages of {keyword}?"
+        ])
+    return questions
+
 def extract_texts(root_files):
     raw_text = ''
     for root_file in root_files:
