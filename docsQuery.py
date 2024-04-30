@@ -37,11 +37,11 @@ from spacy.matcher import Matcher
 
 # Downloading the English language model for spaCy
 try:
-    nlp = spacy.load("en_core_web_sm")
+    nlp = spacy.load("en_core_web_trf")
 except IOError:
-    print("en_core_web_sm not found. Downloading en_core_web_sm...")
-    subprocess.check_call([sys.executable, '-m', 'spacy', 'download', 'en_core_web_sm'])
-    nlp = spacy.load("en_core_web_sm")
+    print("en_core_web_trf not found. Downloading en_core_web_trf...")
+    subprocess.check_call([sys.executable, '-m', 'spacy', 'download', 'en_core_web_trf'])
+    nlp = spacy.load("en_core_web_trf")
 
 matcher = Matcher(nlp.vocab)
 
@@ -184,7 +184,7 @@ from sentence_transformers import SentenceTransformer, util
 
 
 
-nlp = spacy.load("en_core_web_sm")  # Load a language model
+nlp = spacy.load("en_core_web_trf")  # Load a language model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 
@@ -220,12 +220,18 @@ def load_all_questions(all_texts):
     questions = []
     for keyword in unique_keywords:
         questions.extend([
-            f"What is {keyword}?",
-            f"How does {keyword} work?",
-            f"What are the applications of {keyword}?",
-            f"Explain the concept of {keyword}",
-            f"Advantages and disadvantages of {keyword}?"
-        ])
+                f"What is {keyword}?",
+                f"How does {keyword} work?",
+                f"What are the applications of {keyword}?",
+                f"Explain the concept of {keyword}",
+                f"Advantages and disadvantages of {keyword}?",
+                f"What theoretical frameworks underpin {keyword}?",
+                f"How has {keyword} evolved over time?",
+                f"Compare {keyword} with another concept in its category.",
+                f"What methodologies are most effective for studying {keyword}?",
+                f"What ethical issues surround {keyword}?",
+                f"What are the future research directions for {keyword}?"
+            ])
     return questions
 
 
