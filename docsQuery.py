@@ -51,16 +51,14 @@ matcher.add("URL_PATTERN", [pattern])
 
 def extract_keywords(text):
     doc = nlp(text)
-    matches = matcher(doc)
-    # Creating a set of indices for tokens that should be excluded (URLs in this case)
-    excluded_tokens = {start for match_id, start, end in matches}
-    keywords = [
-        token.lemma_ for token in doc 
-        if token.pos_ in {'NOUN', 'PROPN', 'VERB'} 
-        and not token.is_stop 
-        and token.i not in excluded_tokens  # Exclude tokens that are part of a URL
-    ]
-    return keywords
+    keywords = set()
+    # Add entities and noun chunks as keywords
+    for chunk in doc.noun_chunks:
+        keywords.add(chunk.root.text.lower())
+    for ent in doc.ents:
+        keywords.add(ent.text.lower())
+    return list(keywords)
+
 
 
 
@@ -142,9 +140,6 @@ def extract_texts(root_files):
     return docsearch, texts
 
 
-sample_text = "Discuss the impact of artificial intelligence on modern industries and the ethical considerations it brings."
-extracted_keywords = extract_keywords(sample_text)
-print("Extracted Keywords:", extracted_keywords)
 
 
 def run_query(query, docsearch):
@@ -204,8 +199,22 @@ def find_similar_questions(query, questions, top_k=5):
     query_embedding = model.encode(query, convert_to_tensor=True)
     question_embeddings = model.encode(questions, convert_to_tensor=True)
     cos_scores = util.pytorch_cos_sim(query_embedding, question_embeddings)[0]
-    top_results = torch.topk(cos_scores, k=top_k)
-    return [questions[index] for index in top_results.indices]
+
+    top_results = torch.topk(cos_scores, k=top_k*2)  # Fetch more results initially
+    suggested_questions = []
+    seen_keywords = set()
+
+    for index in top_results.indices:
+        question = questions[index]
+        keyword = question.split()[2]  # Assuming the format "What is {keyword}?" for simplicity
+
+        if keyword not in seen_keywords:
+            suggested_questions.append(question)
+            seen_keywords.add(keyword)
+            if len(suggested_questions) == top_k:
+                break
+
+    return suggested_questions
 
 def load_all_questions(all_texts):
     unique_keywords = set()
@@ -223,7 +232,7 @@ def load_all_questions(all_texts):
             f"Advantages and disadvantages of {keyword}?"
         ]
         questions.extend(temp_questions)
-        print(f"Questions for '{keyword}': {temp_questions}")
+        #print(f"Questions for '{keyword}': {temp_questions}")
     return questions
 
 
