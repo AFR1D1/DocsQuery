@@ -35,6 +35,10 @@ import io
 import spacy
 from spacy.matcher import Matcher
 
+
+import torch
+from sentence_transformers import SentenceTransformer, util
+
 # Downloading the English language model for spaCy
 try:
     nlp = spacy.load("en_core_web_sm")
@@ -181,9 +185,7 @@ def upload_file(folder_path):
 
     return root_file
 ################
-import spacy
-import torch
-from sentence_transformers import SentenceTransformer, util
+
 
 
 
