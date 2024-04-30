@@ -238,19 +238,27 @@ def run_conversation(folder_path):
     count = 0
     while True:
         print(f"Question {count + 1}")
-        query = input("Ask questions or type stop:\n")
-        if query.lower() == "stop":
-            print("Thanks.")
+        user_input = input("Ask questions, type suggest, or type stop:\n")
+        if user_input.lower() == "stop":
+            print("Thanks for using the service.")
             break
-        elif query == "":
-            print("Input is empty!")
-            continue
+        elif user_input.lower() == "suggest":
+            # Generate and print related questions suggestions
+            if count == 0:
+                print("Please ask a question first before suggesting related topics.")
+            else:
+                suggestions = find_similar_questions(last_query, all_questions)
+                print("Related questions:")
+                for question in suggestions:
+                    print(question)
+        elif user_input.strip() == "":
+            print("Input is empty, please enter a valid command.")
         else:
             # Extract keywords from the user's query
-            keywords = extract_keywords(query)
+            keywords = extract_keywords(user_input)
             
             # Run the query against the documents
-            response = run_query(query, docsearch)
+            response = run_query(user_input, docsearch)
             
             # Print the response
             wrapped_text = textwrap.wrap(response, width=100)
@@ -258,10 +266,7 @@ def run_conversation(folder_path):
             for line in wrapped_text:
                 print(line)
             
-            # Generate and print related questions suggestions
-            suggestions = find_similar_questions(query, all_questions)
-            print("Related questions:")
-            for question in suggestions:
-                print(question)
+            # Save the last valid question for the suggest feature
+            last_query = user_input
             
             count += 1
