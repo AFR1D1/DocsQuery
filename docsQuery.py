@@ -18,6 +18,14 @@ for name in library_names:
         print(f"{name} not found. Installing {name}...")
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', name])
 
+# Install spacy[transformers] and download en_core_web_trf if spacy is successfully imported
+try:
+    __import__('spacy')
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'spacy[transformers]'])
+    subprocess.check_call([sys.executable, '-m', 'spacy', 'download', 'en_core_web_trf'])
+except Exception as e:
+    print(f"An error occurred: {e}")
+
 from pytesseract import image_to_string
 from PIL import Image
 from PyPDF2 import PdfReader 
@@ -40,12 +48,12 @@ import torch
 from sentence_transformers import SentenceTransformer, util
 
 # Downloading the English language model for spaCy
-try:
-    nlp = spacy.load("en_core_web_trf")
-except IOError:
-    print("en_core_web_trf not found. Attempting to download...")
-    subprocess.check_call([sys.executable, '-m', 'spacy', 'download', 'en_core_web_trf'])
-    nlp = spacy.load("en_core_web_trf")
+#try:
+nlp = spacy.load("en_core_web_trf")
+#except IOError:
+#    print("en_core_web_trf not found. Attempting to download...")
+#    subprocess.check_call([sys.executable, '-m', 'spacy', 'download', 'en_core_web_trf'])
+#    nlp = spacy.load("en_core_web_trf")
 
 matcher = Matcher(nlp.vocab)
 
