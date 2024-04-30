@@ -21,7 +21,6 @@ for name in library_names:
 # Install spacy[transformers] and download en_core_web_trf if spacy is successfully imported
 try:
     __import__('spacy')
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'spacy[transformers]'])
     subprocess.check_call([sys.executable, '-m', 'spacy', 'download', 'en_core_web_trf'])
 except Exception as e:
     print(f"An error occurred: {e}")
