@@ -224,7 +224,13 @@ def load_all_questions(all_texts):
                 f"How does {keyword} work?",
                 f"What are the applications of {keyword}?",
                 f"Explain the concept of {keyword}",
-                f"Advantages and disadvantages of {keyword}?"
+                f"Advantages and disadvantages of {keyword}?",
+                f"What theoretical frameworks underpin {keyword}?",
+                f"How has {keyword} evolved over time?",
+                f"Compare {keyword} with another concept in its category.",
+                f"What methodologies are most effective for studying {keyword}?",
+                f"What ethical issues surround {keyword}?",
+                f"What are the future research directions for {keyword}?"
             ])
     return questions
 
