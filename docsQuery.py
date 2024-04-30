@@ -212,7 +212,7 @@ def generate_questions(client, keywords, max_questions=5):
     questions = []
     for keyword in keywords:
         prompt = f"Generate {max_questions} questions about the keyword '{keyword}':"
-        response = client.Completion.create(
+        response = client.create_completion(
             model="gpt-3.5-turbo",
             messages=[{"role": "system", "content": prompt}]
         )
