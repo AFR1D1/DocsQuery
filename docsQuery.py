@@ -41,11 +41,11 @@ from sentence_transformers import SentenceTransformer, util
 
 # Downloading the English language model for spaCy
 try:
-    nlp = spacy.load("en_core_web_sm")
+    nlp = spacy.load("en_core_web_trf")
 except IOError:
-    print("en_core_web_sm not found. Downloading en_core_web_sm...")
-    subprocess.check_call([sys.executable, '-m', 'spacy', 'download', 'en_core_web_sm'])
-    nlp = spacy.load("en_core_web_sm")
+    print("en_core_web_trf not found. Attempting to download...")
+    subprocess.check_call([sys.executable, '-m', 'spacy', 'download', 'en_core_web_trf'])
+    nlp = spacy.load("en_core_web_trf")
 
 matcher = Matcher(nlp.vocab)
 
@@ -53,7 +53,6 @@ matcher = Matcher(nlp.vocab)
 pattern = [{"LIKE_URL": True}]
 matcher.add("URL_PATTERN", [pattern])
 
-nlp = spacy.load("en_core_web_trf")  # Load a language model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
 def extract_keywords(text):
