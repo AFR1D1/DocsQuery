@@ -142,6 +142,11 @@ def extract_texts(root_files):
     return docsearch, texts
 
 
+sample_text = "Discuss the impact of artificial intelligence on modern industries and the ethical considerations it brings."
+extracted_keywords = extract_keywords(sample_text)
+print("Extracted Keywords:", extracted_keywords)
+
+
 def run_query(query, docsearch):
     """
     Executes a search query on a PDF file utilizing the docsearch and chain libraries.
@@ -203,36 +208,24 @@ def find_similar_questions(query, questions, top_k=5):
     return [questions[index] for index in top_results.indices]
 
 def load_all_questions(all_texts):
-    """
-    Dynamically generates questions based on the content of uploaded files.
-    Parameters:
-    all_texts: A list of strings containing the text segments of the uploaded files.
-    Returns:
-    A list of generated questions based on the keywords extracted from the text.
-    """
-    # Use the provided list of texts to extract keywords and generate questions
     unique_keywords = set()
     for text in all_texts:
         keywords = extract_keywords(text)
         unique_keywords.update(keywords)
     
-    # Generate questions from keywords
     questions = []
     for keyword in unique_keywords:
-        questions.extend([
-                f"What is {keyword}?",
-                f"How does {keyword} work?",
-                f"What are the applications of {keyword}?",
-                f"Explain the concept of {keyword}",
-                f"Advantages and disadvantages of {keyword}?",
-                f"What theoretical frameworks underpin {keyword}?",
-                f"How has {keyword} evolved over time?",
-                f"Compare {keyword} with another concept in its category.",
-                f"What methodologies are most effective for studying {keyword}?",
-                f"What ethical issues surround {keyword}?",
-                f"What are the future research directions for {keyword}?"
-            ])
+        temp_questions = [
+            f"What is {keyword}?",
+            f"How does {keyword} work?",
+            f"What are the applications of {keyword}?",
+            f"Explain the concept of {keyword}",
+            f"Advantages and disadvantages of {keyword}?"
+        ]
+        questions.extend(temp_questions)
+        print(f"Questions for '{keyword}': {temp_questions}")
     return questions
+
 
 
 #################
